@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %} PIE {% endblock %}
+
+{% block content %}
+<!-- Incluir el archivo funciones.js -->
+<script src="{% static 'js/funciones.js' %}"></script>
+
+<body class="">
+   
+    {% include 'componentes/navbar.html' %}
+    {% include 'componentes/sidebar.html' %}
+
+    <div class="flex flex-col ml-64 mt-2 w-4/5 px-4"> 
+    
+        <form method="get" action="" class="flex items-end justify-between mt-4 mb-4" id="filter-form">
+            <!-- Contenedor izquierdo -->
+            <div class="flex items-end gap-x-8">
+                <!-- Filtro Área Académica -->
+                <div class="flex flex-col">
+                    <label class="text-blue-900 font-bold text-sm mb-1" for="area-filter">Filtrar por Área Académica:</label>
+                    <div class="flex space-x-2">
+                        <select class="rounded-md pl-2 py-1 px-5 text-sm md:py-1 w-40" name="area_filtro" id="area-filter">
+                            <option value="">Todas</option>
+                            {% for area in areas_academicas %}
+                                <option value="{{ area.id }}" {% if area.id == area_filtro %}selected{% endif %}>{{ area.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="bg-gradient-to-r from-blue-800 to-blue-700 hover:from-blue-700 hover:to-blue-900 hover:text-white text-white text-sm py-1 px-2 rounded-md" 
+                        type="submit">Filtrar</button>
+                    </div>
+                </div>
+        
+                <!-- Filtro RUT -->
+                <div class="flex flex-col">
+                    <label class="text-blue-900 font-bold text-sm mb-1" for="rut-filter">Buscar por RUT:</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" 
+                            class="rounded-md pl-2 py-1 px-5 text-sm md:py-1 w-40 pie-rut-input" 
+                            name="rut_filtro" 
+                            id="rut-filter" 
+                            placeholder="Ej: 12.345.678-9"
+                            value="{{ rut_filtro|default:'' }}"
+                            maxlength="12">
+                        <button type="submit" 
+                            class="bg-gradient-to-r from-blue-800 to-blue-700 hover:from-blue-700 hover:to-blue-900 hover:text-white text-white text-sm py-1 px-2 rounded-md">
+                            Buscar
+                        </button>
+                    </div>
+                    <div id="pie-rut-error" class="text-yellow-400 text-xs absolute mt-8"></div>
+                </div>
+            </div>
+        
+            <!-- Contenedor derecho -->
+            <div class="flex flex-col">
+                <label class="text-blue-900 font-bold text-sm mb-1" for="year-filter">Filtrar por Año:</label>
+                <div class="flex space-x-2">
+                    <select class="rounded-md pl-2 py-1 px-5 text-sm md:py-1 w-40" name="año_filtro" id="year-filter">
+                        {% for año in años_matricula %}
+                            <option value="{{ año }}" {% if año|stringformat:"s" == año_filtro|stringformat:"s" %}selected{% endif %}>{{ año }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="bg-gradient-to-r from-blue-800 to-blue-700 hover:from-blue-700 hover:to-blue-900 hover:text-white text-white text-sm py-1 px-2 rounded-md" 
+                    type="submit">Filtrar</button>
+                </div>
+            </div>
+        </form>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-center">
+            <thead class="border-b bg-blue-800 ">
+                <tr>
+                    <th scope="col" class="font-semibold font-sans text-xs text-start text-white px-2 py-1 min-w-1/4">ÁREA ACADÉMICA</th>
+                    <th scope="col" class="font-semibold font-sans text-xs text-start text-white px-2 py-1 min-w-1/4">CURSO</th>
+                    <th scope="col" class="font-semibold font-sans text-xs text-start text-white px-2 py-1 min-w-1/4">ESTUDIANTE</th>
+                    <th scope="col" class="font-semibold font-sans text-xs text-start text-white px-2 py-1 min-w-1/4">NEE</th>
+                    <th scope="col" class="font-semibold font-sans text-xs text-start text-white px-2 py-1 min-w-1/4">APODERADO TITULAR</th>
+                    <th scope="col" class="font-semibold font-sans text-xs text-start text-white px-8 py-1 min-w-1/4">INFO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pie in pies %}
+                <tr class="border-b border-neutral-400 {% cycle 'bg-white' 'bg-blue-100' %}">
+                    <td class="text-start text-gray-900 px-2 py-1 text-sm font-sans whitespace-no-wrap">{{ pie.estudiante.cursos.area_academica.nombre }}</td>
+                    <td class="text-start text-gray-900 px-2 py-1 text-sm font-sans whitespace-no-wrap">{{ pie.curso.nombre }}</td>                 
+                    <td class="text-start text-gray-900 px-2 py-1 text-sm font-sans whitespace-no-wrap">{{ pie.estudiante|capfirst }}</td>
+                    <td class="text-start text-gray-900 px-2 py-1 text-sm font-sans whitespace-no-wrap">{{ pie.estudiante.nee }}</td>
+                    <td class="text-start text-gray-900 px-2 py-1 text-sm font-sans whitespace-no-wrap">{{ pie.apoderado_titular|capfirst }}</td>
+                    <td class="text-start text-blue-900 px-2 py-1 text-sm font-sans font-bold whitespace-no-wrap">
+                        <a href="{% url 'estudiante' pie.estudiante.id %}" class="hover:bg-gray-300 px-6 py-1">VER</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Enlaces de paginación -->
+    <div class="flex justify-center mt-4">
+        <ul class="flex space-x-2">
+            {% if pies.has_previous %}
+                <li><a href="?page=1{% if request.GET.area_filtro %}&area_filtro={{ request.GET.area_filtro }}{% endif %}{% if request.GET.año_filtro %}&año_filtro={{ request.GET.año_filtro }}{% endif %}{% if request.GET.rut_filtro %}&rut_filtro={{ request.GET.rut_filtro }}{% endif %}" 
+                    class="bg-gradient-to-r from-blue-900 to-blue-700 
+                    hover:from-blue-600 hover:to-blue-600
+                    font-sans text-white text-sm px-2 py-1 rounded-md">
+                    PRIMERA PÁGINA</a></li>
+                <li><a href="?page={{ pies.previous_page_number }}{% if request.GET.area_filtro %}&area_filtro={{ request.GET.area_filtro }}{% endif %}{% if request.GET.año_filtro %}&año_filtro={{ request.GET.año_filtro }}{% endif %}{% if request.GET.rut_filtro %}&rut_filtro={{ request.GET.rut_filtro }}{% endif %}" 
+                    class="bg-gradient-to-r from-blue-900 to-blue-700 
+                    hover:from-blue-600 hover:to-blue-600 
+                    font-sans text-white text-sm px-2 py-1 rounde-sm">
+                    ANTERIOR</a></li>
+            {% endif %}
+            
+            <li class="bg-gradient-to-r from-blue-900 to-blue-700 
+            hover:from-blue-600 hover:to-blue-600
+            font-sans text-white text-sm px-3 py-1 -my-1 rounded-md">
+            {{ pies.number }}</li>
+            
+            {% if pies.has_next %}
+                <li><a href="?page={{ pies.next_page_number }}{% if request.GET.area_filtro %}&area_filtro={{ request.GET.area_filtro }}{% endif %}{% if request.GET.año_filtro %}&año_filtro={{ request.GET.año_filtro }}{% endif %}{% if request.GET.rut_filtro %}&rut_filtro={{ request.GET.rut_filtro }}{% endif %}" 
+                    class="bg-gradient-to-r from-blue-900 to-blue-700 
+                    hover:from-blue-600 hover:to-blue-600
+                    font-sans text-white text-sm px-2 py-1 rounded-md">
+                    SIGUIENTE</a></li>
+                <li><a href="?page={{ pies.paginator.num_pages }}{% if request.GET.area_filtro %}&area_filtro={{ request.GET.area_filtro }}{% endif %}{% if request.GET.año_filtro %}&año_filtro={{ request.GET.año_filtro }}{% endif %}{% if request.GET.rut_filtro %}&rut_filtro={{ request.GET.rut_filtro }}{% endif %}" 
+                    class="bg-gradient-to-r from-blue-900 to-blue-700 
+                    hover:from-blue-600 hover:to-blue-600  
+                    font-sans text-white text-sm px-2 py-1 rounded-md">
+                    ÚLTIMA</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    </div>
+    <div class="flex flex-col ml-64 mt-2 px-4">
+        <button onclick="document.getElementById('add_estudiante_modal').showModal()" id="btn"
+                    class="py-2 px-4 mt-1 mb-1 bg-gradient-to-b from-amber-200 via-amber-300 to-amber-300 
+                    hover:from-amber-600 hover:to-amber-500 text-blue-900 font-semibold rounded-md shadow-xl block w-1/6">
+                        AGREGAR ESTUDIANTE
+        </button> 
+    </div>
+
+    {% include 'pie/add_estudiante.html' %}
+</body>
+<!-- /**
+ * Script para realizar una tarea específica.
+ * 
+ * Autores:
+ * Raúl Córdova Vicencio
+ * Francisca Olavarría Pavez
+ * Carlos Olivero Bruno
+ * 
+ * Fecha de elaboración: 20-12-2024
+ */
+
+/**
+ * Función principal que ejecuta la tarea.
+ * 
+ * @param {number} parametro1 - Descripción del primer parámetro.
+ * @param {string} parametro2 - Descripción del segundo parámetro.
+ * @returns {boolean} - Descripción del valor de retorno.
+ */
+function tareaPrincipal(parametro1, parametro2) {
+    // Inicializa una variable con el valor del primer parámetro
+    let variable = parametro1;
+
+    // Verifica si la variable cumple una condición específica
+    if (variable > 10) {
+        // Realiza una acción si la condición se cumple
+        console.log("La variable es mayor que 10");
+    } else {
+        // Realiza una acción alternativa si la condición no se cumple
+        console.log("La variable es 10 o menor");
+    }
+
+    // Retorna un valor booleano indicando el resultado de la tarea
+    return variable > 10;
+} -->
+
+<!-- ESTE ES EL CÓDIGO JAVASCRIPT QUE SE UTILIZA PARA VALIDAR EL RUT EN EL FORMULARIO DE FILTRO DE RUT -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const rutInput = document.getElementById('rut-filter');
+        const errorDiv = document.getElementById('pie-rut-error');
+    
+        if (rutInput) {
+            rutInput.addEventListener('input', (event) => {
+                let value = event.target.value.replace(/[^0-9kK]/g, '').toUpperCase();
+    
+                // Insertar guion automáticamente si no está presente
+                if (value.length > 1 && !value.includes('-')) {
+                    const dv = value.slice(-1); // Último carácter como dígito verificador
+                    const numericPart = value.slice(0, -1); // Parte numérica
+                    value = `${numericPart}-${dv}`;
+                }
+    
+                // Separar miles en la parte numérica
+                const parts = value.split('-');
+                if (parts.length > 0) {
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    value = parts.join('-');
+                }
+    
+                event.target.value = value;
+                errorDiv.textContent = '';
+            });
+    
+            rutInput.addEventListener('blur', () => {
+                const value = rutInput.value;
+                if (value && !validateRut(value)) {
+                    errorDiv.textContent = 'RUT inválido';
+                } else {
+                    errorDiv.textContent = '';
+                }
+            });
+        }
+    });
+    
+    function validateRut(rut) {
+        const rutParts = rut.split('-');
+        if (rutParts.length !== 2) return false;
+    
+        const numericPart = rutParts[0].replace(/\D/g, '');
+        const dv = rutParts[1].toUpperCase();
+    
+        if (!/^[0-9]+$/.test(numericPart) || !/^[0-9K]$/.test(dv)) {
+            return false;
+        }
+    
+        let total = 0;
+        let multiplier = 2;
+    
+        for (let i = numericPart.length - 1; i >= 0; i--) {
+            total += parseInt(numericPart[i]) * multiplier;
+            multiplier = multiplier === 7 ? 2 : multiplier + 1;
+        }
+    
+        const calculatedDv = 11 - (total % 11);
+    
+        if (calculatedDv === 11) return dv === '0';
+        if (calculatedDv === 10) return dv === 'K';
+    
+        return dv === calculatedDv.toString();
+    }
+    </script>
+{% endblock content %}
